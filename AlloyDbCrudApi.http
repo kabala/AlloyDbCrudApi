@@ -1,0 +1,36 @@
+@AlloyDbCrudApi_HostAddress = http://localhost:8080
+
+GET {{AlloyDbCrudApi_HostAddress}}/api/items
+Accept: application/json
+
+###
+
+GET {{AlloyDbCrudApi_HostAddress}}/api/items/1
+Accept: application/json
+
+###
+
+POST {{AlloyDbCrudApi_HostAddress}}/api/items
+Content-Type: application/json
+
+{
+  "name": "Sample item",
+  "description": "Created from .http file"
+}
+
+###
+
+PUT {{AlloyDbCrudApi_HostAddress}}/api/items/1
+Content-Type: application/json
+
+{
+  "id": 1,
+  "name": "Updated item",
+  "description": "Updated description"
+}
+
+###
+
+DELETE {{AlloyDbCrudApi_HostAddress}}/api/items/1
+
+###
