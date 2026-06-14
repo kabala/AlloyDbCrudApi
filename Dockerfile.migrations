@@ -1,0 +1,22 @@
+# Build an EF Core migration bundle for production database updates.
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+COPY . .
+RUN dotnet tool restore
+RUN dotnet restore
+RUN dotnet ef migrations bundle \
+    --configuration Release \
+    --self-contained \
+    --target-runtime linux-x64 \
+    --output /app/efbundle \
+    --force
+
+FROM mcr.microsoft.com/dotnet/runtime-deps:10.0 AS runtime
+WORKDIR /app
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgssapi-krb5-2 \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=build /app/efbundle /app/efbundle
+COPY scripts/run-migrations.sh /app/run-migrations.sh
+RUN chmod +x /app/efbundle /app/run-migrations.sh
+ENTRYPOINT ["/app/run-migrations.sh"]

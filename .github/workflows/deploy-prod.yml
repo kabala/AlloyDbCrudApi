@@ -1,0 +1,75 @@
+name: Deploy Production
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  REGION: ${{ vars.GCP_REGION }}
+  ARTIFACT_REGISTRY_REPOSITORY: ${{ vars.ARTIFACT_REGISTRY_REPOSITORY }}
+  CLOUD_RUN_SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
+  CLOUD_RUN_SERVICE_ACCOUNT: ${{ vars.CLOUD_RUN_SERVICE_ACCOUNT }}
+  VPC_CONNECTOR: ${{ vars.VPC_CONNECTOR }}
+  DB_CONNECTION_SECRET: ${{ vars.DB_CONNECTION_SECRET }}
+  IMAGE_NAME: alloydb-crud-api
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+
+      - name: Build and push API image
+        run: |
+          set -euo pipefail
+          image="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REGISTRY_REPOSITORY}/${IMAGE_NAME}:${GITHUB_SHA}"
+          docker build --file Dockerfile --tag "$image" .
+          docker push "$image"
+          echo "IMAGE=$image" >> "$GITHUB_ENV"
+
+      - name: Deploy Cloud Run service
+        run: |
+          set -euo pipefail
+
+          auth_flag="--no-allow-unauthenticated"
+          if [ "${{ vars.CLOUD_RUN_ALLOW_UNAUTHENTICATED }}" = "true" ]; then
+            auth_flag="--allow-unauthenticated"
+          fi
+
+          gcloud run deploy "$CLOUD_RUN_SERVICE" \
+            --project "$PROJECT_ID" \
+            --region "$REGION" \
+            --platform managed \
+            --image "$IMAGE" \
+            --service-account "$CLOUD_RUN_SERVICE_ACCOUNT" \
+            --set-env-vars "ASPNETCORE_ENVIRONMENT=Production,AlloyDbAdmin__Enabled=false,AlloyDbAdmin__ProjectId=$PROJECT_ID,AlloyDbAdmin__Location=$REGION" \
+            --set-secrets "ConnectionStrings__DefaultConnection=${DB_CONNECTION_SECRET}:latest" \
+            --vpc-connector "$VPC_CONNECTOR" \
+            --vpc-egress private-ranges-only \
+            $auth_flag
+
+      - name: Show service URL
+        run: |
+          gcloud run services describe "$CLOUD_RUN_SERVICE" \
+            --project "$PROJECT_ID" \
+            --region "$REGION" \
+            --format "value(status.url)"

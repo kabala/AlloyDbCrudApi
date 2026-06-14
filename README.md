@@ -44,7 +44,7 @@ It also includes a sample integration with the **Google.Cloud.AlloyDb.V1** NuGet
 
 ## Run with Docker Compose (recommended)
 
-This is the fastest way to get everything running locally. Docker Compose will start:
+This is the fastest way to get everything running locally. Docker Compose is local-only and starts:
 
 - an **AlloyDB Omni** container on port `5432`
 - the .NET API container on port `8080`
@@ -63,6 +63,8 @@ Once healthy, open:
 
 - API base URL: `http://localhost:8080`
 - Interactive API docs (Scalar): `http://localhost:8080/scalar`
+
+Production does not use Docker Compose or AlloyDB Omni. See [Production Deployment](docs/production-deployment.md) for the Cloud Run + real AlloyDB workflow.
 
 ### Stop everything
 
@@ -177,6 +179,8 @@ To enable it:
 ## Database migrations
 
 The project already contains an `InitialCreate` migration. It is applied automatically when the app starts in the `Development` environment.
+
+Production does not auto-apply migrations on app startup. Use the `Migrate Production Database` GitHub Actions workflow, which builds an EF Core migration bundle and runs it as a Cloud Run Job inside the VPC that can reach AlloyDB.
 
 To apply migrations manually:
 
