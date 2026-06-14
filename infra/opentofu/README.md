@@ -9,6 +9,7 @@ This directory owns the Google Cloud production architecture for the app. Docker
 - AlloyDB free trial cluster with an 8 vCPU primary instance.
 - Serverless VPC Access connector for Cloud Run to reach AlloyDB private IP.
 - Artifact Registry Docker repository.
+- AlloyDB built-in `app_user` database user.
 - Secret Manager connection strings for the app and migration job.
 - Cloud Run runtime and migration service accounts.
 - GitHub deploy service account.
@@ -41,7 +42,7 @@ After `tofu apply` completes:
 
 ## State And Secrets
 
-The AlloyDB initial password and generated connection-string secret values are passed with the Google provider's write-only fields where supported. Increment `alloydb_postgres_password_version` and `connection_secret_version` when rotating those values. Still treat the OpenTofu working directory and plan output as sensitive, and use encrypted remote state with restricted access for any shared environment.
+The AlloyDB built-in user password and generated connection-string secret values are passed with the Google provider's write-only fields where supported. Increment `alloydb_postgres_password_version` and `connection_secret_version` when rotating those values. Still treat the OpenTofu working directory and plan output as sensitive, and use encrypted remote state with restricted access for any shared environment.
 
 This repo currently uses local OpenTofu state. The local `terraform.tfstate` file is ignored by Git and must not be deleted while these resources are managed from this workstation. Before moving management to CI or another machine, migrate this state to an encrypted remote backend such as a locked-down Google Cloud Storage bucket.
 

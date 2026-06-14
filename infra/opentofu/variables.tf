@@ -107,9 +107,9 @@ variable "alloydb_database_name" {
 }
 
 variable "alloydb_user" {
-  description = "Initial AlloyDB database user."
+  description = "Application AlloyDB built-in database user."
   type        = string
-  default     = "postgres"
+  default     = "app_user"
 }
 
 variable "alloydb_postgres_password" {
@@ -119,9 +119,9 @@ variable "alloydb_postgres_password" {
 }
 
 variable "alloydb_postgres_password_version" {
-  description = "Increment this when rotating the write-only AlloyDB postgres password."
+  description = "Increment this when rotating the write-only AlloyDB built-in user password."
   type        = number
-  default     = 2
+  default     = 4
 }
 
 variable "db_connection_secret" {
@@ -139,7 +139,7 @@ variable "migration_db_connection_secret" {
 variable "connection_secret_version" {
   description = "Increment this when rotating the write-only Secret Manager connection string versions."
   type        = number
-  default     = 2
+  default     = 5
 }
 
 variable "cloud_run_allow_unauthenticated" {

@@ -13,6 +13,11 @@ output "alloydb_private_ip" {
   value       = google_alloydb_instance.primary.ip_address
 }
 
+output "alloydb_app_user" {
+  description = "AlloyDB built-in database user used by app and migration connection strings."
+  value       = google_alloydb_user.app.user_id
+}
+
 output "artifact_registry_repository" {
   description = "Artifact Registry repository ID."
   value       = google_artifact_registry_repository.containers.repository_id

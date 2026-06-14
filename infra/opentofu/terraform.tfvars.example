@@ -11,7 +11,8 @@ alloydb_postgres_password = "replace-with-a-strong-password"
 
 # Optional: keep postgres unless you create another database separately first.
 alloydb_database_name = "postgres"
+alloydb_user          = "app_user"
 
 # Increment these when rotating the write-only DB password/connection strings.
-alloydb_postgres_password_version = 2
-connection_secret_version         = 2
+alloydb_postgres_password_version = 4
+connection_secret_version         = 5

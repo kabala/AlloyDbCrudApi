@@ -78,7 +78,7 @@ resource "google_alloydb_cluster" "main" {
   }
 
   initial_user {
-    user                = var.alloydb_user
+    user                = "postgres"
     password_wo         = var.alloydb_postgres_password
     password_wo_version = var.alloydb_postgres_password_version
   }
@@ -95,6 +95,18 @@ resource "google_alloydb_instance" "primary" {
   machine_config {
     cpu_count = 8
   }
+}
+
+resource "google_alloydb_user" "app" {
+  cluster   = google_alloydb_cluster.main.name
+  user_id   = var.alloydb_user
+  user_type = "ALLOYDB_BUILT_IN"
+
+  password_wo         = var.alloydb_postgres_password
+  password_wo_version = var.alloydb_postgres_password_version
+  database_roles      = ["alloydbsuperuser"]
+
+  depends_on = [google_alloydb_instance.primary]
 }
 
 resource "google_artifact_registry_repository" "containers" {
@@ -144,15 +156,19 @@ resource "google_secret_manager_secret" "migration_connection" {
 resource "google_secret_manager_secret_version" "app_connection" {
   secret = google_secret_manager_secret.app_connection.id
 
-  secret_data_wo         = "Host=${google_alloydb_instance.primary.ip_address};Port=5432;Database=${var.alloydb_database_name};Username=${var.alloydb_user};Password=${var.alloydb_postgres_password};SSL Mode=Disable"
+  secret_data_wo         = "Host=${google_alloydb_instance.primary.ip_address};Port=5432;Database=${var.alloydb_database_name};Username=${var.alloydb_user};Password=${var.alloydb_postgres_password};SSL Mode=Require;Trust Server Certificate=true"
   secret_data_wo_version = var.connection_secret_version
+
+  depends_on = [google_alloydb_user.app]
 }
 
 resource "google_secret_manager_secret_version" "migration_connection" {
   secret = google_secret_manager_secret.migration_connection.id
 
-  secret_data_wo         = "Host=${google_alloydb_instance.primary.ip_address};Port=5432;Database=${var.alloydb_database_name};Username=${var.alloydb_user};Password=${var.alloydb_postgres_password};SSL Mode=Disable"
+  secret_data_wo         = "Host=${google_alloydb_instance.primary.ip_address};Port=5432;Database=${var.alloydb_database_name};Username=${var.alloydb_user};Password=${var.alloydb_postgres_password};SSL Mode=Require;Trust Server Certificate=true"
   secret_data_wo_version = var.connection_secret_version
+
+  depends_on = [google_alloydb_user.app]
 }
 
 resource "google_service_account" "deploy" {

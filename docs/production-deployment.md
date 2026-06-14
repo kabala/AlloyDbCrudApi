@@ -61,20 +61,20 @@ Create these before running the workflows:
 Use an AlloyDB private IP address in the connection string:
 
 ```text
-Host=10.0.0.5;Port=5432;Database=cruddb;Username=app_user;Password=REPLACE_ME;SSL Mode=Disable
+Host=10.0.0.5;Port=5432;Database=cruddb;Username=app_user;Password=REPLACE_ME;SSL Mode=Require;Trust Server Certificate=true
 ```
 
 Store it in Secret Manager:
 
 ```bash
-printf '%s' 'Host=10.0.0.5;Port=5432;Database=cruddb;Username=app_user;Password=REPLACE_ME;SSL Mode=Disable' \
+printf '%s' 'Host=10.0.0.5;Port=5432;Database=cruddb;Username=app_user;Password=REPLACE_ME;SSL Mode=Require;Trust Server Certificate=true' \
   | gcloud secrets create alloydb-crud-api-connection --data-file=-
 ```
 
 For migrations, prefer a separate database user that can apply DDL:
 
 ```bash
-printf '%s' 'Host=10.0.0.5;Port=5432;Database=cruddb;Username=migration_user;Password=REPLACE_ME;SSL Mode=Disable' \
+printf '%s' 'Host=10.0.0.5;Port=5432;Database=cruddb;Username=migration_user;Password=REPLACE_ME;SSL Mode=Require;Trust Server Certificate=true' \
   | gcloud secrets create alloydb-crud-api-migration-connection --data-file=-
 ```
 
