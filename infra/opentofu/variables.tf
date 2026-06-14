@@ -82,6 +82,48 @@ variable "cloud_run_service" {
   default     = "alloydb-crud-api"
 }
 
+variable "cloud_run_image_name" {
+  description = "Artifact Registry image name for the API container."
+  type        = string
+  default     = "alloydb-crud-api"
+}
+
+variable "cloud_run_image_tag" {
+  description = "Bootstrap API image tag used when OpenTofu creates the Cloud Run service. GitHub Actions updates the image on each deployment."
+  type        = string
+  default     = "eb44393dac2180dd0d26edfd33b038e2321427d5"
+}
+
+variable "cloud_run_cpu" {
+  description = "CPU limit for the API Cloud Run container."
+  type        = string
+  default     = "1000m"
+}
+
+variable "cloud_run_memory" {
+  description = "Memory limit for the API Cloud Run container."
+  type        = string
+  default     = "512Mi"
+}
+
+variable "cloud_run_min_instances" {
+  description = "Minimum API Cloud Run instances. Keep zero for pay-per-use local/demo production."
+  type        = number
+  default     = 0
+}
+
+variable "cloud_run_max_instances" {
+  description = "Maximum API Cloud Run instances."
+  type        = number
+  default     = 20
+}
+
+variable "cloud_run_container_concurrency" {
+  description = "Maximum concurrent requests per API Cloud Run instance."
+  type        = number
+  default     = 80
+}
+
 variable "migration_job" {
   description = "Cloud Run Job name used by the migration workflow."
   type        = string

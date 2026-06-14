@@ -23,6 +23,11 @@ output "artifact_registry_repository" {
   value       = google_artifact_registry_repository.containers.repository_id
 }
 
+output "cloud_run_service_url" {
+  description = "Cloud Run API service URL."
+  value       = google_cloud_run_v2_service.api.uri
+}
+
 output "vpc_connector" {
   description = "Serverless VPC Access connector path used by GitHub Actions."
   value       = local.vpc_connector_path

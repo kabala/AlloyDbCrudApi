@@ -11,6 +11,7 @@ This directory owns the Google Cloud production architecture for the app. Docker
 - Artifact Registry Docker repository.
 - AlloyDB built-in `app_user` database user.
 - Secret Manager connection strings for the app and migration job.
+- Cloud Run API service configured with private AlloyDB access.
 - Cloud Run runtime and migration service accounts.
 - GitHub deploy service account.
 - Workload Identity Federation for GitHub Actions.
@@ -39,6 +40,8 @@ After `tofu apply` completes:
 
 1. Run the `Migrate Production Database` GitHub workflow.
 2. Run the `Deploy Production` GitHub workflow.
+
+OpenTofu owns the Cloud Run service shape: service account, VPC connector, secrets, scaling, CPU, and memory. The deploy workflow builds the .NET API image, pushes it to Artifact Registry, and updates the service image to create a new Cloud Run revision.
 
 ## State And Secrets
 

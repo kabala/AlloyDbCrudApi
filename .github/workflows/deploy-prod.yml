@@ -15,7 +15,7 @@ env:
   CLOUD_RUN_SERVICE_ACCOUNT: ${{ vars.CLOUD_RUN_SERVICE_ACCOUNT }}
   VPC_CONNECTOR: ${{ vars.VPC_CONNECTOR }}
   DB_CONNECTION_SECRET: ${{ vars.DB_CONNECTION_SECRET }}
-  IMAGE_NAME: alloydb-crud-api
+  IMAGE_NAME: ${{ vars.API_IMAGE_NAME }}
 
 jobs:
   deploy:

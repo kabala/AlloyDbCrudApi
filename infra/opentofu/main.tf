@@ -11,6 +11,7 @@ locals {
   workload_identity_provider_id = "github-provider"
 
   vpc_connector_path = "projects/${var.project_id}/locations/${var.region}/connectors/${var.vpc_connector_name}"
+  api_image          = "${var.region}-docker.pkg.dev/${var.project_id}/${var.artifact_registry_repository}/${var.cloud_run_image_name}:${var.cloud_run_image_tag}"
 }
 
 data "google_project" "current" {
@@ -233,6 +234,106 @@ resource "google_secret_manager_secret_iam_member" "migrations_reads_migration_c
   member    = "serviceAccount:${google_service_account.migrations.email}"
 }
 
+resource "google_cloud_run_v2_service" "api" {
+  project             = var.project_id
+  location            = var.region
+  name                = var.cloud_run_service
+  deletion_protection = true
+  ingress             = "INGRESS_TRAFFIC_ALL"
+
+  template {
+    service_account                  = google_service_account.runtime.email
+    timeout                          = "300s"
+    max_instance_request_concurrency = var.cloud_run_container_concurrency
+
+    scaling {
+      min_instance_count = var.cloud_run_min_instances
+      max_instance_count = var.cloud_run_max_instances
+    }
+
+    vpc_access {
+      connector = google_vpc_access_connector.cloud_run.id
+      egress    = "PRIVATE_RANGES_ONLY"
+    }
+
+    containers {
+      image = local.api_image
+
+      ports {
+        name           = "http1"
+        container_port = 8080
+      }
+
+      resources {
+        limits = {
+          cpu    = var.cloud_run_cpu
+          memory = var.cloud_run_memory
+        }
+
+        cpu_idle          = true
+        startup_cpu_boost = true
+      }
+
+      env {
+        name  = "ASPNETCORE_ENVIRONMENT"
+        value = "Production"
+      }
+
+      env {
+        name  = "AlloyDbAdmin__Enabled"
+        value = "false"
+      }
+
+      env {
+        name  = "AlloyDbAdmin__ProjectId"
+        value = var.project_id
+      }
+
+      env {
+        name  = "AlloyDbAdmin__Location"
+        value = var.region
+      }
+
+      env {
+        name = "ConnectionStrings__DefaultConnection"
+
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.app_connection.secret_id
+            version = "latest"
+          }
+        }
+      }
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      client,
+      client_version,
+      template[0].containers[0].image,
+      template[0].labels,
+      template[0].revision,
+      traffic,
+    ]
+  }
+
+  depends_on = [
+    google_project_service.required,
+    google_secret_manager_secret_iam_member.runtime_reads_app_connection,
+  ]
+}
+
+resource "google_cloud_run_v2_service_iam_member" "public_invoker" {
+  count = var.cloud_run_allow_unauthenticated ? 1 : 0
+
+  project  = var.project_id
+  location = google_cloud_run_v2_service.api.location
+  name     = google_cloud_run_v2_service.api.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
 resource "google_iam_workload_identity_pool" "github" {
   project                   = var.project_id
   workload_identity_pool_id = local.workload_identity_pool_id
@@ -274,6 +375,7 @@ resource "github_actions_variable" "production" {
     GCP_WORKLOAD_IDENTITY_PROVIDER  = google_iam_workload_identity_pool_provider.github.name
     GCP_DEPLOY_SERVICE_ACCOUNT      = google_service_account.deploy.email
     ARTIFACT_REGISTRY_REPOSITORY    = google_artifact_registry_repository.containers.repository_id
+    API_IMAGE_NAME                  = var.cloud_run_image_name
     CLOUD_RUN_SERVICE               = var.cloud_run_service
     CLOUD_RUN_SERVICE_ACCOUNT       = google_service_account.runtime.email
     MIGRATION_JOB                   = var.migration_job

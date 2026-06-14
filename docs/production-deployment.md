@@ -6,7 +6,7 @@ Docker Compose is only for local development with AlloyDB Omni. Production uses 
 
 - GitHub Actions authenticates to Google Cloud with Workload Identity Federation.
 - The API image is pushed to Artifact Registry.
-- Cloud Run hosts the API container.
+- Cloud Run hosts the API container. The service configuration is managed by OpenTofu; GitHub Actions updates the image for each release.
 - Cloud Run reaches AlloyDB private IP through a Serverless VPC Access connector.
 - Secret Manager stores database connection strings.
 - EF Core migrations run from a separate Cloud Run Job built from `Dockerfile.migrations`.
@@ -32,6 +32,7 @@ The OpenTofu configuration creates:
 - Private services access on the selected VPC.
 - Serverless VPC Access connector.
 - Artifact Registry repository.
+- Cloud Run API service with min instances set to zero for pay-per-use operation.
 - Secret Manager connection-string secrets.
 - Runtime, migration, and GitHub deploy service accounts.
 - Workload Identity Federation for GitHub Actions.
@@ -52,6 +53,7 @@ Create these before running the workflows:
 - VPC with private services access configured for AlloyDB.
 - Serverless VPC Access connector in the same region as Cloud Run.
 - Artifact Registry Docker repository.
+- Cloud Run API service.
 - Secret Manager secret for the application connection string.
 - Optional separate Secret Manager secret for the migration connection string.
 - Runtime service account for Cloud Run.
@@ -89,6 +91,7 @@ Set these repository or environment variables in GitHub:
 | `GCP_WORKLOAD_IDENTITY_PROVIDER` | `projects/123/locations/global/workloadIdentityPools/github/providers/github` |
 | `GCP_DEPLOY_SERVICE_ACCOUNT` | `github-deploy@my-project.iam.gserviceaccount.com` |
 | `ARTIFACT_REGISTRY_REPOSITORY` | `containers` |
+| `API_IMAGE_NAME` | `alloydb-crud-api` |
 | `CLOUD_RUN_SERVICE` | `alloydb-crud-api` |
 | `CLOUD_RUN_SERVICE_ACCOUNT` | `alloydb-crud-api@my-project.iam.gserviceaccount.com` |
 | `MIGRATION_JOB` | `alloydb-crud-api-migrations` |
