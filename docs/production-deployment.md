@@ -13,6 +13,30 @@ Docker Compose is only for local development with AlloyDB Omni. Production uses 
 
 The application does not run `Database.Migrate()` in production. Production schema changes are applied by the `Migrate Production Database` workflow.
 
+## One-command provisioning
+
+If your Google Cloud project has billing enabled, you can provision the free-trial stack with:
+
+```powershell
+.\scripts\provision-gcp-free-trial.ps1 `
+  -ProjectId personal-434212 `
+  -Region us-east1 `
+  -Repository kabala/AlloyDbCrudApi
+```
+
+The script creates:
+
+- AlloyDB free trial cluster and 8 vCPU primary instance.
+- Private services access on the selected VPC.
+- Serverless VPC Access connector.
+- Artifact Registry repository.
+- Secret Manager connection-string secrets.
+- Runtime, migration, and GitHub deploy service accounts.
+- Workload Identity Federation for GitHub Actions.
+- Required GitHub repository variables.
+
+The script uses the default `postgres` database by default because AlloyDB database creation is a SQL operation after the instance exists. You can pass `-DatabaseName cruddb` if you create that database separately in AlloyDB Studio or from a VPC-connected SQL client before running migrations.
+
 ## Required Google Cloud Resources
 
 Create these before running the workflows:
