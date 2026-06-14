@@ -64,7 +64,7 @@ Once healthy, open:
 - API base URL: `http://localhost:8080`
 - Interactive API docs (Scalar): `http://localhost:8080/scalar`
 
-Production does not use Docker Compose or AlloyDB Omni. See [Production Deployment](docs/production-deployment.md) for the Cloud Run + real AlloyDB workflow, including the `scripts/provision-gcp-free-trial.ps1` helper for creating an AlloyDB free-trial cluster and related Google Cloud resources.
+Production does not use Docker Compose or AlloyDB Omni. See [Production Deployment](docs/production-deployment.md) for the Cloud Run + real AlloyDB workflow and the OpenTofu configuration that creates the AlloyDB free-trial cluster and related Google Cloud resources.
 
 ### Stop everything
 

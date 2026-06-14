@@ -1,0 +1,17 @@
+project_id                  = "personal-434212"
+region                      = "us-east1"
+github_owner                = "kabala"
+github_repository_name      = "AlloyDbCrudApi"
+github_repository_full_name = "kabala/AlloyDbCrudApi"
+network_name                = "alloydb-crud-vpc"
+
+# Required. This value is sensitive and is stored in OpenTofu state because
+# google_alloydb_cluster.initial_user.password is not write-only.
+alloydb_postgres_password = "replace-with-a-strong-password"
+
+# Optional: keep postgres unless you create another database separately first.
+alloydb_database_name = "postgres"
+
+# Increment these when rotating the write-only DB password/connection strings.
+alloydb_postgres_password_version = 2
+connection_secret_version         = 2

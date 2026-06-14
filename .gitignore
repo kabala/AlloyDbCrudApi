@@ -14,3 +14,8 @@ coverage/
 artifacts/
 
 *.log
+
+infra/opentofu/.terraform/
+infra/opentofu/terraform.tfvars
+infra/opentofu/*.tfstate
+infra/opentofu/*.tfstate.*

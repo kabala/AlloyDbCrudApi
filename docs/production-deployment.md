@@ -13,18 +13,20 @@ Docker Compose is only for local development with AlloyDB Omni. Production uses 
 
 The application does not run `Database.Migrate()` in production. Production schema changes are applied by the `Migrate Production Database` workflow.
 
-## One-command provisioning
+## Infrastructure With OpenTofu
 
-If your Google Cloud project has billing enabled, you can provision the free-trial stack with:
+Production Google Cloud resources are managed with OpenTofu in `infra/opentofu`.
 
 ```powershell
-.\scripts\provision-gcp-free-trial.ps1 `
-  -ProjectId personal-434212 `
-  -Region us-east1 `
-  -Repository kabala/AlloyDbCrudApi
+cd infra/opentofu
+Copy-Item terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars and set alloydb_postgres_password.
+tofu init
+tofu plan
+tofu apply
 ```
 
-The script creates:
+The OpenTofu configuration creates:
 
 - AlloyDB free trial cluster and 8 vCPU primary instance.
 - Private services access on the selected VPC.
@@ -35,7 +37,11 @@ The script creates:
 - Workload Identity Federation for GitHub Actions.
 - Required GitHub repository variables.
 
-The script uses the default `postgres` database by default because AlloyDB database creation is a SQL operation after the instance exists. You can pass `-DatabaseName cruddb` if you create that database separately in AlloyDB Studio or from a VPC-connected SQL client before running migrations.
+The configuration uses the default `postgres` database by default because AlloyDB database creation is a SQL operation after the instance exists. If you create another database separately in AlloyDB Studio or from a VPC-connected SQL client, update `alloydb_database_name` and re-apply.
+
+The AlloyDB initial password and Secret Manager connection-string values are passed with the Google provider's write-only fields where supported. Still treat OpenTofu plans and state access as sensitive, and use encrypted remote state with tightly scoped access before sharing this environment.
+
+The current setup uses local OpenTofu state under `infra/opentofu`. That file is ignored by Git. Keep it safe until you migrate state to a remote backend.
 
 ## Required Google Cloud Resources
 
