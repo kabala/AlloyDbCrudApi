@@ -189,3 +189,9 @@ variable "cloud_run_allow_unauthenticated" {
   type        = bool
   default     = false
 }
+
+variable "cors_allowed_origins" {
+  description = "Exact browser origins allowed to call the API through CORS, for example the public frontend URL."
+  type        = list(string)
+  default     = []
+}

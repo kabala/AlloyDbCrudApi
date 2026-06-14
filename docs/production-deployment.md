@@ -44,6 +44,19 @@ The AlloyDB initial password and Secret Manager connection-string values are pas
 
 The current setup uses local OpenTofu state under `infra/opentofu`. That file is ignored by Git. Keep it safe until you migrate state to a remote backend.
 
+## Browser SPA Access
+
+If the frontend is a browser-only SPA in a separate repository, it cannot use a private Cloud Run service account identity directly from the browser. In that architecture the API must be publicly invokable, and CORS should be restricted to the exact frontend origin:
+
+```hcl
+cloud_run_allow_unauthenticated = true
+cors_allowed_origins = [
+  "https://your-frontend-url.run.app"
+]
+```
+
+CORS only controls browser cross-origin reads. It does not authenticate users or block non-browser clients, so public API endpoints that mutate or expose private data should still have application-level authentication.
+
 ## Required Google Cloud Resources
 
 Create these before running the workflows:

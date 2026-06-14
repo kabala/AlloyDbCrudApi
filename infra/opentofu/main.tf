@@ -304,6 +304,15 @@ resource "google_cloud_run_v2_service" "api" {
           }
         }
       }
+
+      dynamic "env" {
+        for_each = var.cors_allowed_origins
+
+        content {
+          name  = "Cors__AllowedOrigins__${env.key}"
+          value = env.value
+        }
+      }
     }
   }
 

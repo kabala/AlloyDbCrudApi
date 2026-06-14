@@ -43,6 +43,19 @@ After `tofu apply` completes:
 
 OpenTofu owns the Cloud Run service shape: service account, VPC connector, secrets, scaling, CPU, and memory. The deploy workflow builds the .NET API image, pushes it to Artifact Registry, and updates the service image to create a new Cloud Run revision.
 
+## Frontend CORS
+
+If a public browser SPA calls this API directly, the API must be publicly invokable and CORS should allow only the exact frontend origins:
+
+```hcl
+cloud_run_allow_unauthenticated = true
+cors_allowed_origins = [
+  "https://your-frontend-url.run.app"
+]
+```
+
+CORS is browser enforcement, not API authentication. Non-browser clients can still call a public Cloud Run API, so add application-level auth before exposing sensitive operations.
+
 ## State And Secrets
 
 The AlloyDB built-in user password and generated connection-string secret values are passed with the Google provider's write-only fields where supported. Increment `alloydb_postgres_password_version` and `connection_secret_version` when rotating those values. Still treat the OpenTofu working directory and plan output as sensitive, and use encrypted remote state with restricted access for any shared environment.

@@ -61,7 +61,7 @@ jobs:
             --platform managed \
             --image "$IMAGE" \
             --service-account "$CLOUD_RUN_SERVICE_ACCOUNT" \
-            --set-env-vars "ASPNETCORE_ENVIRONMENT=Production,AlloyDbAdmin__Enabled=false,AlloyDbAdmin__ProjectId=$PROJECT_ID,AlloyDbAdmin__Location=$REGION" \
+            --update-env-vars "ASPNETCORE_ENVIRONMENT=Production,AlloyDbAdmin__Enabled=false,AlloyDbAdmin__ProjectId=$PROJECT_ID,AlloyDbAdmin__Location=$REGION" \
             --set-secrets "ConnectionStrings__DefaultConnection=${DB_CONNECTION_SECRET}:latest" \
             --vpc-connector "$VPC_CONNECTOR" \
             --vpc-egress private-ranges-only \
