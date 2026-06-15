@@ -56,6 +56,16 @@ cors_allowed_origins = [
 
 CORS is browser enforcement, not API authentication. Non-browser clients can still call a public Cloud Run API, so add application-level auth before exposing sensitive operations.
 
+When using the sibling frontend repo, let it generate the local CORS tfvars file:
+
+```powershell
+cd ..\DEMO-FRONT
+.\scripts\sync-shared-config.ps1 -BackendRepoPath ..\DEMO -PlanBackend
+.\scripts\sync-shared-config.ps1 -BackendRepoPath ..\DEMO -ApplyBackend
+```
+
+This creates `infra/opentofu/frontend.auto.tfvars`, which OpenTofu loads automatically and git ignores.
+
 ## State And Secrets
 
 The AlloyDB built-in user password and generated connection-string secret values are passed with the Google provider's write-only fields where supported. Increment `alloydb_postgres_password_version` and `connection_secret_version` when rotating those values. Still treat the OpenTofu working directory and plan output as sensitive, and use encrypted remote state with restricted access for any shared environment.

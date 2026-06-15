@@ -78,6 +78,16 @@ tofu plan
 tofu apply
 ```
 
+If the frontend repo is checked out next to this backend repo, use its sync script instead of copying values manually:
+
+```powershell
+cd ..\DEMO-FRONT
+.\scripts\sync-shared-config.ps1 -BackendRepoPath ..\DEMO -PlanBackend
+.\scripts\sync-shared-config.ps1 -BackendRepoPath ..\DEMO -ApplyBackend
+```
+
+The script writes `infra/opentofu/frontend.auto.tfvars` in this backend repo. That file is ignored by git and is loaded automatically by OpenTofu.
+
 ## Frontend OpenTofu Shape
 
 A separate frontend repo can use its own OpenTofu stack. For a Cloud Run hosted SPA container, the important pieces are:
@@ -146,4 +156,3 @@ CORS only controls browser cross-origin access. It does not authenticate users a
 5. Set `cloud_run_allow_unauthenticated = true` for direct SPA-to-API browser calls.
 6. Apply this repo's OpenTofu config.
 7. Redeploy the API only if the CORS code has not already been deployed.
-
