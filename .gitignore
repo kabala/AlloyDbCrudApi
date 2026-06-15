@@ -17,5 +17,6 @@ artifacts/
 
 infra/opentofu/.terraform/
 infra/opentofu/terraform.tfvars
+infra/opentofu/*.auto.tfvars
 infra/opentofu/*.tfstate
 infra/opentofu/*.tfstate.*
