@@ -50,4 +50,3 @@ Production migrations are run by an EF Core migration bundle in a Cloud Run Job.
 ## Frontend Assumption
 
 The frontend will be a public browser SPA in a separate repository. The API is publicly invokable and uses CORS to allow only configured frontend origins. CORS is not authentication; application-level auth must be added before sensitive data or mutations are exposed.
-
