@@ -47,26 +47,32 @@ NEXT_PUBLIC_API_BASE_URL=https://alloydb-crud-api-dmkxnmuy3q-ue.a.run.app
 
 ## Values This API Repo Needs Back
 
-After the frontend is deployed, take its exact public origin and add it to this API repo OpenTofu config:
+The frontend Cloud Run service has a stable public origin:
+
+```text
+https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app
+```
+
+This API repo stores that origin directly in OpenTofu defaults:
 
 ```hcl
 cloud_run_allow_unauthenticated = true
 cors_allowed_origins = [
-  "https://your-frontend-url.run.app"
+  "https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app"
 ]
 ```
 
 The origin must include scheme and host, with no path:
 
 ```text
-https://your-frontend-url.run.app
+https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app
 ```
 
 Do not use:
 
 ```text
-https://your-frontend-url.run.app/
-https://your-frontend-url.run.app/app
+https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app/
+https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app/app
 *
 ```
 
@@ -77,16 +83,6 @@ cd infra/opentofu
 tofu plan
 tofu apply
 ```
-
-If the frontend repo is checked out next to this backend repo, use its sync script instead of copying values manually:
-
-```powershell
-cd ..\DEMO-FRONT
-.\scripts\sync-shared-config.ps1 -BackendRepoPath ..\DEMO -PlanBackend
-.\scripts\sync-shared-config.ps1 -BackendRepoPath ..\DEMO -ApplyBackend
-```
-
-The script writes `infra/opentofu/frontend.auto.tfvars` in this backend repo. That file is ignored by git and is loaded automatically by OpenTofu.
 
 ## Frontend OpenTofu Shape
 
@@ -135,7 +131,7 @@ Cors:AllowedOrigins
 OpenTofu writes those values to Cloud Run as:
 
 ```text
-Cors__AllowedOrigins__0=https://your-frontend-url.run.app
+Cors__AllowedOrigins__0=https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app
 Cors__AllowedOrigins__1=https://another-allowed-origin.run.app
 ```
 
@@ -152,7 +148,6 @@ CORS only controls browser cross-origin access. It does not authenticate users a
 1. Deploy the API infrastructure and API service.
 2. Create the frontend repo infrastructure.
 3. Deploy the frontend and get its public URL.
-4. Add that frontend origin to this repo's `cors_allowed_origins`.
-5. Set `cloud_run_allow_unauthenticated = true` for direct SPA-to-API browser calls.
-6. Apply this repo's OpenTofu config.
-7. Redeploy the API only if the CORS code has not already been deployed.
+4. Confirm that this repo's `cors_allowed_origins` still matches the frontend origin.
+5. Apply this repo's OpenTofu config.
+6. Redeploy the API only if the CORS code has not already been deployed.

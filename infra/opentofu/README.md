@@ -50,21 +50,11 @@ If a public browser SPA calls this API directly, the API must be publicly invoka
 ```hcl
 cloud_run_allow_unauthenticated = true
 cors_allowed_origins = [
-  "https://your-frontend-url.run.app"
+  "https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app"
 ]
 ```
 
 CORS is browser enforcement, not API authentication. Non-browser clients can still call a public Cloud Run API, so add application-level auth before exposing sensitive operations.
-
-When using the sibling frontend repo, let it generate the local CORS tfvars file:
-
-```powershell
-cd ..\DEMO-FRONT
-.\scripts\sync-shared-config.ps1 -BackendRepoPath ..\DEMO -PlanBackend
-.\scripts\sync-shared-config.ps1 -BackendRepoPath ..\DEMO -ApplyBackend
-```
-
-This creates `infra/opentofu/frontend.auto.tfvars`, which OpenTofu loads automatically and git ignores.
 
 ## State And Secrets
 

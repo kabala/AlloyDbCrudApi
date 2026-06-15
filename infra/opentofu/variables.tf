@@ -187,11 +187,11 @@ variable "connection_secret_version" {
 variable "cloud_run_allow_unauthenticated" {
   description = "Whether the deploy workflow should deploy Cloud Run with public unauthenticated access."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "cors_allowed_origins" {
   description = "Exact browser origins allowed to call the API through CORS, for example the public frontend URL."
   type        = list(string)
-  default     = []
+  default     = ["https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app"]
 }

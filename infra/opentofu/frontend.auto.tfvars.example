@@ -1,4 +1,0 @@
-cloud_run_allow_unauthenticated = true
-cors_allowed_origins = [
-  "https://alloydb-crud-frontend-example-ue.a.run.app",
-]

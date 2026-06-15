@@ -51,7 +51,7 @@ If the frontend is a browser-only SPA in a separate repository, it cannot use a 
 ```hcl
 cloud_run_allow_unauthenticated = true
 cors_allowed_origins = [
-  "https://your-frontend-url.run.app"
+  "https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app"
 ]
 ```
 
