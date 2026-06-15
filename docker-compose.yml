@@ -1,7 +1,7 @@
 services:
-  alloydb:
-    image: google/alloydbomni:17
-    container_name: alloydb-omni-local
+  postgres:
+    image: postgres:16
+    container_name: cloud-sql-postgres-local
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: devpassword
@@ -9,7 +9,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - alloydb-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -22,13 +22,13 @@ services:
       dockerfile: Dockerfile
     container_name: alloydb-crud-api
     depends_on:
-      alloydb:
+      postgres:
         condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__DefaultConnection: "Host=alloydb;Port=5432;Database=cruddb;Username=postgres;Password=devpassword"
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=cruddb;Username=postgres;Password=devpassword"
     ports:
       - "8080:8080"
 
 volumes:
-  alloydb-data:
+  postgres-data:

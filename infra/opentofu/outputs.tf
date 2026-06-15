@@ -1,21 +1,21 @@
-output "alloydb_cluster_name" {
-  description = "Full AlloyDB cluster resource name."
-  value       = google_alloydb_cluster.main.name
+output "cloud_sql_instance_name" {
+  description = "Cloud SQL PostgreSQL instance name."
+  value       = google_sql_database_instance.postgres.name
 }
 
-output "alloydb_primary_instance_name" {
-  description = "Full AlloyDB primary instance resource name."
-  value       = google_alloydb_instance.primary.name
+output "cloud_sql_connection_name" {
+  description = "Cloud SQL instance connection name used by Cloud Run."
+  value       = google_sql_database_instance.postgres.connection_name
 }
 
-output "alloydb_private_ip" {
-  description = "Private IP address for the AlloyDB primary instance."
-  value       = google_alloydb_instance.primary.ip_address
+output "cloud_sql_database_name" {
+  description = "Application database name."
+  value       = google_sql_database.app.name
 }
 
-output "alloydb_app_user" {
-  description = "AlloyDB built-in database user used by app and migration connection strings."
-  value       = google_alloydb_user.app.user_id
+output "cloud_sql_app_user" {
+  description = "Cloud SQL PostgreSQL user used by app and migration connection strings."
+  value       = google_sql_user.app.name
 }
 
 output "artifact_registry_repository" {
@@ -26,11 +26,6 @@ output "artifact_registry_repository" {
 output "cloud_run_service_url" {
   description = "Cloud Run API service URL."
   value       = google_cloud_run_v2_service.api.uri
-}
-
-output "vpc_connector" {
-  description = "Serverless VPC Access connector path used by GitHub Actions."
-  value       = local.vpc_connector_path
 }
 
 output "workload_identity_provider" {

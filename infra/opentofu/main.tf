@@ -1,7 +1,7 @@
 locals {
   deploy_service_account_id    = "github-deploy"
-  runtime_service_account_id   = "alloydb-crud-api"
-  migration_service_account_id = "alloydb-crud-migrations"
+  runtime_service_account_id   = "cloudsql-crud-api"
+  migration_service_account_id = "cloudsql-crud-migrations"
 
   deploy_service_account_email    = "${local.deploy_service_account_id}@${var.project_id}.iam.gserviceaccount.com"
   runtime_service_account_email   = "${local.runtime_service_account_id}@${var.project_id}.iam.gserviceaccount.com"
@@ -10,27 +10,29 @@ locals {
   workload_identity_pool_id     = "github"
   workload_identity_provider_id = "github-provider"
 
-  vpc_connector_path = "projects/${var.project_id}/locations/${var.region}/connectors/${var.vpc_connector_name}"
-  api_image          = "${var.region}-docker.pkg.dev/${var.project_id}/${var.artifact_registry_repository}/${var.cloud_run_image_name}:${var.cloud_run_image_tag}"
+  api_image = "${var.region}-docker.pkg.dev/${var.project_id}/${var.artifact_registry_repository}/${var.cloud_run_image_name}:${var.cloud_run_image_tag}"
 }
 
 data "google_project" "current" {
   project_id = var.project_id
 }
 
+resource "random_password" "database" {
+  length  = 32
+  special = false
+}
+
 resource "google_project_service" "required" {
   for_each = toset([
-    "alloydb.googleapis.com",
     "artifactregistry.googleapis.com",
     "cloudresourcemanager.googleapis.com",
-    "compute.googleapis.com",
     "iam.googleapis.com",
     "iamcredentials.googleapis.com",
     "run.googleapis.com",
     "secretmanager.googleapis.com",
-    "servicenetworking.googleapis.com",
     "serviceusage.googleapis.com",
-    "vpcaccess.googleapis.com",
+    "sql-component.googleapis.com",
+    "sqladmin.googleapis.com",
   ])
 
   project            = var.project_id
@@ -38,76 +40,54 @@ resource "google_project_service" "required" {
   disable_on_destroy = false
 }
 
-resource "google_compute_network" "app" {
-  project                 = var.project_id
-  name                    = var.network_name
-  auto_create_subnetworks = true
+resource "google_sql_database_instance" "postgres" {
+  project          = var.project_id
+  name             = var.cloud_sql_instance_name
+  region           = var.region
+  database_version = var.cloud_sql_database_version
+
+  deletion_protection = var.cloud_sql_deletion_protection
+
+  settings {
+    tier = var.cloud_sql_tier
+    # Cloud SQL calls the standard edition "ENTERPRISE"; this is not Enterprise Plus.
+    # It is required for shared-core tiers such as db-f1-micro.
+    edition           = "ENTERPRISE"
+    availability_type = "ZONAL"
+    disk_type         = var.cloud_sql_disk_type
+    disk_size         = var.cloud_sql_disk_size_gb
+    disk_autoresize   = true
+
+    ip_configuration {
+      ipv4_enabled = true
+    }
+
+    backup_configuration {
+      enabled                        = var.cloud_sql_backups_enabled
+      point_in_time_recovery_enabled = false
+      start_time                     = "06:00"
+    }
+
+    database_flags {
+      name  = "cloudsql.logical_decoding"
+      value = "on"
+    }
+  }
 
   depends_on = [google_project_service.required]
 }
 
-resource "google_compute_global_address" "private_services" {
-  project       = var.project_id
-  name          = var.allocated_ip_range_name
-  purpose       = "VPC_PEERING"
-  address_type  = "INTERNAL"
-  prefix_length = var.private_services_prefix_length
-  network       = google_compute_network.app.id
-
-  depends_on = [google_project_service.required]
+resource "google_sql_database" "app" {
+  project  = var.project_id
+  instance = google_sql_database_instance.postgres.name
+  name     = var.cloud_sql_database_name
 }
 
-resource "google_service_networking_connection" "private_services" {
-  network                 = google_compute_network.app.id
-  service                 = "servicenetworking.googleapis.com"
-  reserved_peering_ranges = [google_compute_global_address.private_services.name]
-
-  depends_on = [google_project_service.required]
-}
-
-resource "google_alloydb_cluster" "main" {
-  project             = var.project_id
-  cluster_id          = var.alloydb_cluster_id
-  location            = var.region
-  database_version    = "POSTGRES_17"
-  subscription_type   = "TRIAL"
-  deletion_protection = true
-
-  network_config {
-    network            = google_compute_network.app.id
-    allocated_ip_range = google_compute_global_address.private_services.name
-  }
-
-  initial_user {
-    user                = "postgres"
-    password_wo         = var.alloydb_postgres_password
-    password_wo_version = var.alloydb_postgres_password_version
-  }
-
-  depends_on = [google_service_networking_connection.private_services]
-}
-
-resource "google_alloydb_instance" "primary" {
-  cluster       = google_alloydb_cluster.main.name
-  instance_id   = var.alloydb_primary_instance_id
-  instance_type = "PRIMARY"
-  display_name  = var.alloydb_primary_instance_id
-
-  machine_config {
-    cpu_count = 8
-  }
-}
-
-resource "google_alloydb_user" "app" {
-  cluster   = google_alloydb_cluster.main.name
-  user_id   = var.alloydb_user
-  user_type = "ALLOYDB_BUILT_IN"
-
-  password_wo         = var.alloydb_postgres_password
-  password_wo_version = var.alloydb_postgres_password_version
-  database_roles      = ["alloydbsuperuser"]
-
-  depends_on = [google_alloydb_instance.primary]
+resource "google_sql_user" "app" {
+  project  = var.project_id
+  instance = google_sql_database_instance.postgres.name
+  name     = var.cloud_sql_user
+  password = random_password.database.result
 }
 
 resource "google_artifact_registry_repository" "containers" {
@@ -116,18 +96,6 @@ resource "google_artifact_registry_repository" "containers" {
   repository_id = var.artifact_registry_repository
   format        = "DOCKER"
   description   = "Application container images"
-
-  depends_on = [google_project_service.required]
-}
-
-resource "google_vpc_access_connector" "cloud_run" {
-  project       = var.project_id
-  region        = var.region
-  name          = var.vpc_connector_name
-  network       = google_compute_network.app.name
-  ip_cidr_range = var.vpc_connector_cidr_range
-  min_instances = var.vpc_connector_min_instances
-  max_instances = var.vpc_connector_max_instances
 
   depends_on = [google_project_service.required]
 }
@@ -157,19 +125,19 @@ resource "google_secret_manager_secret" "migration_connection" {
 resource "google_secret_manager_secret_version" "app_connection" {
   secret = google_secret_manager_secret.app_connection.id
 
-  secret_data_wo         = "Host=${google_alloydb_instance.primary.ip_address};Port=5432;Database=${var.alloydb_database_name};Username=${var.alloydb_user};Password=${var.alloydb_postgres_password};SSL Mode=Require;Trust Server Certificate=true"
+  secret_data_wo         = "Host=/cloudsql/${google_sql_database_instance.postgres.connection_name};Port=5432;Database=${google_sql_database.app.name};Username=${google_sql_user.app.name};Password=${random_password.database.result}"
   secret_data_wo_version = var.connection_secret_version
 
-  depends_on = [google_alloydb_user.app]
+  depends_on = [google_sql_user.app]
 }
 
 resource "google_secret_manager_secret_version" "migration_connection" {
   secret = google_secret_manager_secret.migration_connection.id
 
-  secret_data_wo         = "Host=${google_alloydb_instance.primary.ip_address};Port=5432;Database=${var.alloydb_database_name};Username=${var.alloydb_user};Password=${var.alloydb_postgres_password};SSL Mode=Require;Trust Server Certificate=true"
+  secret_data_wo         = "Host=/cloudsql/${google_sql_database_instance.postgres.connection_name};Port=5432;Database=${google_sql_database.app.name};Username=${google_sql_user.app.name};Password=${random_password.database.result}"
   secret_data_wo_version = var.connection_secret_version
 
-  depends_on = [google_alloydb_user.app]
+  depends_on = [google_sql_user.app]
 }
 
 resource "google_service_account" "deploy" {
@@ -200,12 +168,22 @@ resource "google_project_iam_member" "deploy_project_roles" {
   for_each = toset([
     "roles/artifactregistry.writer",
     "roles/run.admin",
-    "roles/vpcaccess.user",
   ])
 
   project = var.project_id
   role    = each.value
   member  = "serviceAccount:${google_service_account.deploy.email}"
+}
+
+resource "google_project_iam_member" "cloud_sql_clients" {
+  for_each = {
+    runtime    = google_service_account.runtime.email
+    migrations = google_service_account.migrations.email
+  }
+
+  project = var.project_id
+  role    = "roles/cloudsql.client"
+  member  = "serviceAccount:${each.value}"
 }
 
 resource "google_service_account_iam_member" "deploy_can_act_as_runtime" {
@@ -238,7 +216,7 @@ resource "google_cloud_run_v2_service" "api" {
   project             = var.project_id
   location            = var.region
   name                = var.cloud_run_service
-  deletion_protection = true
+  deletion_protection = false
   ingress             = "INGRESS_TRAFFIC_ALL"
 
   template {
@@ -251,9 +229,12 @@ resource "google_cloud_run_v2_service" "api" {
       max_instance_count = var.cloud_run_max_instances
     }
 
-    vpc_access {
-      connector = google_vpc_access_connector.cloud_run.id
-      egress    = "PRIVATE_RANGES_ONLY"
+    volumes {
+      name = "cloudsql"
+
+      cloud_sql_instance {
+        instances = [google_sql_database_instance.postgres.connection_name]
+      }
     }
 
     containers {
@@ -262,6 +243,11 @@ resource "google_cloud_run_v2_service" "api" {
       ports {
         name           = "http1"
         container_port = 8080
+      }
+
+      volume_mounts {
+        name       = "cloudsql"
+        mount_path = "/cloudsql"
       }
 
       resources {
@@ -277,21 +263,6 @@ resource "google_cloud_run_v2_service" "api" {
       env {
         name  = "ASPNETCORE_ENVIRONMENT"
         value = "Production"
-      }
-
-      env {
-        name  = "AlloyDbAdmin__Enabled"
-        value = "false"
-      }
-
-      env {
-        name  = "AlloyDbAdmin__ProjectId"
-        value = var.project_id
-      }
-
-      env {
-        name  = "AlloyDbAdmin__Location"
-        value = var.region
       }
 
       env {
@@ -317,6 +288,8 @@ resource "google_cloud_run_v2_service" "api" {
   }
 
   lifecycle {
+    create_before_destroy = true
+
     ignore_changes = [
       client,
       client_version,
@@ -329,7 +302,9 @@ resource "google_cloud_run_v2_service" "api" {
 
   depends_on = [
     google_project_service.required,
+    google_project_iam_member.cloud_sql_clients,
     google_secret_manager_secret_iam_member.runtime_reads_app_connection,
+    google_secret_manager_secret_version.app_connection,
   ]
 }
 
@@ -379,20 +354,20 @@ resource "google_service_account_iam_member" "github_workload_identity" {
 
 resource "github_actions_variable" "production" {
   for_each = {
-    GCP_PROJECT_ID                  = var.project_id
-    GCP_REGION                      = var.region
-    GCP_WORKLOAD_IDENTITY_PROVIDER  = google_iam_workload_identity_pool_provider.github.name
-    GCP_DEPLOY_SERVICE_ACCOUNT      = google_service_account.deploy.email
-    ARTIFACT_REGISTRY_REPOSITORY    = google_artifact_registry_repository.containers.repository_id
-    API_IMAGE_NAME                  = var.cloud_run_image_name
-    CLOUD_RUN_SERVICE               = var.cloud_run_service
-    CLOUD_RUN_SERVICE_ACCOUNT       = google_service_account.runtime.email
-    MIGRATION_JOB                   = var.migration_job
-    MIGRATION_SERVICE_ACCOUNT       = google_service_account.migrations.email
-    VPC_CONNECTOR                   = local.vpc_connector_path
-    DB_CONNECTION_SECRET            = google_secret_manager_secret.app_connection.secret_id
-    MIGRATION_DB_CONNECTION_SECRET  = google_secret_manager_secret.migration_connection.secret_id
-    CLOUD_RUN_ALLOW_UNAUTHENTICATED = tostring(var.cloud_run_allow_unauthenticated)
+    GCP_PROJECT_ID                     = var.project_id
+    GCP_REGION                         = var.region
+    GCP_WORKLOAD_IDENTITY_PROVIDER     = google_iam_workload_identity_pool_provider.github.name
+    GCP_DEPLOY_SERVICE_ACCOUNT         = google_service_account.deploy.email
+    ARTIFACT_REGISTRY_REPOSITORY       = google_artifact_registry_repository.containers.repository_id
+    API_IMAGE_NAME                     = var.cloud_run_image_name
+    CLOUD_RUN_SERVICE                  = var.cloud_run_service
+    CLOUD_RUN_SERVICE_ACCOUNT          = google_service_account.runtime.email
+    CLOUD_SQL_INSTANCE_CONNECTION_NAME = google_sql_database_instance.postgres.connection_name
+    MIGRATION_JOB                      = var.migration_job
+    MIGRATION_SERVICE_ACCOUNT          = google_service_account.migrations.email
+    DB_CONNECTION_SECRET               = google_secret_manager_secret.app_connection.secret_id
+    MIGRATION_DB_CONNECTION_SECRET     = google_secret_manager_secret.migration_connection.secret_id
+    CLOUD_RUN_ALLOW_UNAUTHENTICATED    = tostring(var.cloud_run_allow_unauthenticated)
   }
 
   repository    = var.github_repository_name

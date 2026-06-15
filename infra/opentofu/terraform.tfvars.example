@@ -3,21 +3,18 @@ region                      = "us-east1"
 github_owner                = "kabala"
 github_repository_name      = "AlloyDbCrudApi"
 github_repository_full_name = "kabala/AlloyDbCrudApi"
-network_name                = "alloydb-crud-vpc"
-
-# Required. This value is sensitive and is stored in OpenTofu state because
-# google_alloydb_cluster.initial_user.password is not write-only.
-alloydb_postgres_password = "replace-with-a-strong-password"
 
 cloud_run_allow_unauthenticated = true
 cors_allowed_origins = [
-  "https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app",
+  # "https://your-frontend-url.run.app",
 ]
 
-# Optional: keep postgres unless you create another database separately first.
-alloydb_database_name = "postgres"
-alloydb_user          = "app_user"
-
-# Increment these when rotating the write-only DB password/connection strings.
-alloydb_postgres_password_version = 4
-connection_secret_version         = 5
+cloud_sql_instance_name     = "crud-postgres"
+cloud_sql_database_version  = "POSTGRES_16"
+cloud_sql_tier              = "db-f1-micro"
+cloud_sql_disk_type         = "PD_HDD"
+cloud_sql_disk_size_gb      = 10
+cloud_sql_backups_enabled   = false
+cloud_sql_database_name     = "cruddb"
+cloud_sql_user              = "app_user"
+connection_secret_version   = 6

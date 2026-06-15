@@ -1,6 +1,6 @@
 # Database Schema
 
-The application uses EF Core with the Npgsql provider against AlloyDB for PostgreSQL. The current schema is defined by:
+The application uses EF Core with the Npgsql provider against PostgreSQL. Production runs on Cloud SQL for PostgreSQL. The current schema is defined by:
 
 - `Data/AppDbContext.cs`
 - `Models/Item.cs`
@@ -88,8 +88,7 @@ Then run the production migration workflow before deploying an app version that 
 
 ## Production Notes
 
-- Docker Compose uses local AlloyDB Omni only for development.
-- Production uses AlloyDB for PostgreSQL in Google Cloud.
+- Docker Compose uses local PostgreSQL only for development.
+- Production uses Cloud SQL for PostgreSQL in Google Cloud.
 - The API does not run `Database.Migrate()` in production.
 - Schema changes should be backward compatible during rolling deployments. Prefer expand-and-contract changes for renames, required columns, and destructive changes.
-

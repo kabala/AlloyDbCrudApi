@@ -5,7 +5,7 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Database context - AlloyDB is PostgreSQL-compatible, so we use Npgsql.
+// Cloud SQL for PostgreSQL uses the standard PostgreSQL wire protocol, so we use Npgsql.
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")
@@ -50,6 +50,5 @@ if (corsAllowedOrigins.Length > 0)
 }
 
 app.MapItemEndpoints();
-app.MapAlloyDbAdminEndpoints();
 
 app.Run();

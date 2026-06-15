@@ -6,7 +6,7 @@ This API can be consumed by a browser-only SPA deployed from a separate reposito
 
 API repo owns:
 
-- AlloyDB and database connection secrets.
+- Cloud SQL and database connection secrets.
 - API Cloud Run service.
 - API Artifact Registry image repository.
 - API GitHub Actions deploy identity.
@@ -29,20 +29,20 @@ Use these values in the frontend repo OpenTofu variables, GitHub Actions variabl
 |---|---|---|
 | `GCP_PROJECT_ID` | `personal-434212` | Google Cloud project where frontend deploys. |
 | `GCP_REGION` | `us-east1` | Region to colocate frontend near the API. |
-| `API_BASE_URL` | `https://alloydb-crud-api-dmkxnmuy3q-ue.a.run.app` | Base URL for browser requests from the SPA. |
-| `API_ITEMS_URL` | `https://alloydb-crud-api-dmkxnmuy3q-ue.a.run.app/api/items` | Existing CRUD items endpoint. |
+| `API_BASE_URL` | `https://cloudsql-crud-api-REPLACE.run.app` | Base URL for browser requests from the SPA. |
+| `API_ITEMS_URL` | `https://cloudsql-crud-api-REPLACE.run.app/api/items` | Existing CRUD items endpoint. |
 
 For common SPA frameworks, pass the API URL as a build-time environment variable:
 
 ```bash
 # Vite
-VITE_API_BASE_URL=https://alloydb-crud-api-dmkxnmuy3q-ue.a.run.app
+VITE_API_BASE_URL=https://cloudsql-crud-api-REPLACE.run.app
 
 # Create React App
-REACT_APP_API_BASE_URL=https://alloydb-crud-api-dmkxnmuy3q-ue.a.run.app
+REACT_APP_API_BASE_URL=https://cloudsql-crud-api-REPLACE.run.app
 
 # Next.js browser-exposed value
-NEXT_PUBLIC_API_BASE_URL=https://alloydb-crud-api-dmkxnmuy3q-ue.a.run.app
+NEXT_PUBLIC_API_BASE_URL=https://cloudsql-crud-api-REPLACE.run.app
 ```
 
 ## Values This API Repo Needs Back
@@ -50,7 +50,7 @@ NEXT_PUBLIC_API_BASE_URL=https://alloydb-crud-api-dmkxnmuy3q-ue.a.run.app
 The frontend Cloud Run service has a stable public origin:
 
 ```text
-https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app
+https://your-frontend-url.run.app
 ```
 
 This API repo stores that origin directly in OpenTofu defaults:
@@ -58,21 +58,21 @@ This API repo stores that origin directly in OpenTofu defaults:
 ```hcl
 cloud_run_allow_unauthenticated = true
 cors_allowed_origins = [
-  "https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app"
+  "https://your-frontend-url.run.app"
 ]
 ```
 
 The origin must include scheme and host, with no path:
 
 ```text
-https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app
+https://your-frontend-url.run.app
 ```
 
 Do not use:
 
 ```text
-https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app/
-https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app/app
+https://your-frontend-url.run.app/
+https://your-frontend-url.run.app/app
 *
 ```
 
@@ -101,12 +101,12 @@ variable "region" {
 
 variable "api_base_url" {
   type    = string
-  default = "https://alloydb-crud-api-dmkxnmuy3q-ue.a.run.app"
+  default = "https://cloudsql-crud-api-REPLACE.run.app"
 }
 
 variable "frontend_service_name" {
   type    = string
-  default = "alloydb-crud-frontend"
+  default = "cloudsql-crud-frontend"
 }
 ```
 
@@ -131,7 +131,7 @@ Cors:AllowedOrigins
 OpenTofu writes those values to Cloud Run as:
 
 ```text
-Cors__AllowedOrigins__0=https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app
+Cors__AllowedOrigins__0=https://your-frontend-url.run.app
 Cors__AllowedOrigins__1=https://another-allowed-origin.run.app
 ```
 

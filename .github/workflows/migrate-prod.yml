@@ -13,9 +13,9 @@ env:
   ARTIFACT_REGISTRY_REPOSITORY: ${{ vars.ARTIFACT_REGISTRY_REPOSITORY }}
   MIGRATION_JOB: ${{ vars.MIGRATION_JOB }}
   MIGRATION_SERVICE_ACCOUNT: ${{ vars.MIGRATION_SERVICE_ACCOUNT }}
-  VPC_CONNECTOR: ${{ vars.VPC_CONNECTOR }}
+  CLOUD_SQL_INSTANCE_CONNECTION_NAME: ${{ vars.CLOUD_SQL_INSTANCE_CONNECTION_NAME }}
   MIGRATION_DB_CONNECTION_SECRET: ${{ vars.MIGRATION_DB_CONNECTION_SECRET || vars.DB_CONNECTION_SECRET }}
-  IMAGE_NAME: alloydb-crud-api-migrations
+  IMAGE_NAME: cloudsql-crud-api-migrations
 
 jobs:
   migrate:
@@ -55,8 +55,7 @@ jobs:
             --image "$MIGRATION_IMAGE" \
             --service-account "$MIGRATION_SERVICE_ACCOUNT" \
             --set-secrets "ConnectionStrings__DefaultConnection=${MIGRATION_DB_CONNECTION_SECRET}:latest" \
-            --vpc-connector "$VPC_CONNECTOR" \
-            --vpc-egress private-ranges-only \
+            --set-cloudsql-instances "$CLOUD_SQL_INSTANCE_CONNECTION_NAME" \
             --tasks 1 \
             --max-retries 0 \
             --task-timeout 900s
