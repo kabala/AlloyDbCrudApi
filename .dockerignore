@@ -2,6 +2,7 @@ bin/
 obj/
 .git/
 .github/
+tests/
 
 .env
 .vs/
