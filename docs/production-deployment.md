@@ -110,6 +110,45 @@ The Cloud SQL instance enables `cloudsql.logical_decoding` for CDC readiness. A 
 
 For breaking schema changes, use expand-and-contract migrations so the currently deployed app and the new app can both run during rollout.
 
+## Manual Cloud Seed
+
+If the seed workflow is not yet present on the default branch, run the initial historical seed directly with `gcloud`:
+
+```bash
+gcloud builds submit \
+  --project "$PROJECT_ID" \
+  --tag "$REGION-docker.pkg.dev/$PROJECT_ID/$ARTIFACT_REGISTRY_REPOSITORY/$IMAGE_NAME:$TAG" .
+
+gcloud run jobs deploy cloudsql-crud-api-seed-bi-history \
+  --project "$PROJECT_ID" \
+  --region "$REGION" \
+  --image "$REGION-docker.pkg.dev/$PROJECT_ID/$ARTIFACT_REGISTRY_REPOSITORY/$IMAGE_NAME:$TAG" \
+  --service-account "$MIGRATION_SERVICE_ACCOUNT" \
+  --set-secrets "ConnectionStrings__DefaultConnection=${MIGRATION_DB_CONNECTION_SECRET}:latest" \
+  --set-cloudsql-instances "$CLOUD_SQL_INSTANCE_CONNECTION_NAME" \
+  --args=--seed=retail-bi-history \
+  --tasks 1 \
+  --max-retries 0 \
+  --task-timeout 1800s
+
+gcloud run jobs execute cloudsql-crud-api-seed-bi-history \
+  --project "$PROJECT_ID" \
+  --region "$REGION" \
+  --wait
+```
+
+This path was verified against the current project configuration in `personal-434212`. The working secret for the seed job is `cloudsql-crud-api-migration-connection`, because the migration service account already has access to that secret.
+
+The successful Cloud Run execution inserted:
+
+- `50000` products
+- `25000` customers
+- `43489` sales
+- `36732` inventory rows
+- `4317` returns
+
+and logged final totals near the BI target profile: revenue `10799681.41`, margin `6164283.08`, database size from about `8.24MB` to about `44.3MB`.
+
 ## Local Development
 
 Keep using Docker Compose locally:

@@ -226,6 +226,33 @@ dotnet AlloyDbCrudApi.dll --seed retail-bi-history
 
 Running that job writes directly to whichever database is configured by `ConnectionStrings__DefaultConnection`. Treat it as an intentional production write.
 
+If the workflow file is not yet available on the repository default branch, you can run the same cloud seed path manually with `gcloud`:
+
+```bash
+gcloud builds submit \
+  --project "$PROJECT_ID" \
+  --tag "$REGION-docker.pkg.dev/$PROJECT_ID/$ARTIFACT_REGISTRY_REPOSITORY/$IMAGE_NAME:$TAG" .
+
+gcloud run jobs deploy cloudsql-crud-api-seed-bi-history \
+  --project "$PROJECT_ID" \
+  --region "$REGION" \
+  --image "$REGION-docker.pkg.dev/$PROJECT_ID/$ARTIFACT_REGISTRY_REPOSITORY/$IMAGE_NAME:$TAG" \
+  --service-account "$MIGRATION_SERVICE_ACCOUNT" \
+  --set-secrets "ConnectionStrings__DefaultConnection=${MIGRATION_DB_CONNECTION_SECRET}:latest" \
+  --set-cloudsql-instances "$CLOUD_SQL_INSTANCE_CONNECTION_NAME" \
+  --args=--seed=retail-bi-history \
+  --tasks 1 \
+  --max-retries 0 \
+  --task-timeout 1800s
+
+gcloud run jobs execute cloudsql-crud-api-seed-bi-history \
+  --project "$PROJECT_ID" \
+  --region "$REGION" \
+  --wait
+```
+
+For this repository's current GCP setup, the working cloud seed path uses the migration service account together with `MIGRATION_DB_CONNECTION_SECRET`, not the runtime `DB_CONNECTION_SECRET`.
+
 ## Configuration
 
 Important settings:
@@ -254,6 +281,19 @@ The explicit BI seed targets these approximate operational counts:
 
 It generates clean source data intended for later BigQuery extraction. BigQuery models, ETL, dashboards, ABC calculations, and RFM materialization remain outside this API.
 
+As of the latest cloud verification on June 28, 2026, the Cloud Run seed job completed successfully against Cloud SQL and logged:
+
+- `stores=5`
+- `suppliers=4`
+- `products=50000`
+- `customers=25000`
+- `sales=43489`
+- `returns=4317`
+- `revenue=10799681.41`
+- `margin=6164283.08`
+
+The same check did not show any BigQuery datasets in project `personal-434212`, so Cloud SQL is populated but BigQuery ingestion is not yet visible from this repository's current cloud setup.
+
 ## Project Structure
 
 ```text
@@ -272,4 +312,3 @@ infra/opentofu/   Google Cloud production infrastructure
 - [Production Deployment](docs/production-deployment.md)
 - [Database Schema](docs/database-schema.md)
 - [Frontend Integration](docs/frontend-integration.md)
-- [Massive Retail BI Seed Plan](docs/massive-retail-bi-seed-plan.md)
