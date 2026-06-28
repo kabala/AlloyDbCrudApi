@@ -9,7 +9,7 @@ public class InventoryItem
     public string StoreId { get; set; } = string.Empty;
     public int StockOnHand { get; set; }
     public int ReservedStock { get; set; }
-    public byte[] RowVersion { get; set; } = [];
+    public uint ConcurrencyToken { get; set; }
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public int AvailableStock => StockOnHand - ReservedStock;

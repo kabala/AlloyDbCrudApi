@@ -109,7 +109,7 @@ public class AppDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
             e.Property(i => i.StockOnHand).HasDefaultValue(0);
             e.Property(i => i.ReservedStock).HasDefaultValue(0);
             e.Property(i => i.UpdatedAt).HasDefaultValueSql("NOW()");
-            e.Property(i => i.RowVersion).IsRowVersion();
+            e.Property(i => i.ConcurrencyToken).IsRowVersion().HasColumnName("xmin");
             e.HasIndex(i => new { i.StoreId, i.ProductId }).IsUnique();
         });
 
