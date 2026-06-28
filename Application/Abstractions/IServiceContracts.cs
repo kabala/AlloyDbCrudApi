@@ -1,4 +1,5 @@
 using AlloyDbCrudApi.Application.Contracts.Auth;
+using AlloyDbCrudApi.Application.Contracts.Bi;
 using AlloyDbCrudApi.Application.Contracts.Customers;
 using AlloyDbCrudApi.Application.Contracts.Common;
 using AlloyDbCrudApi.Application.Contracts.Inventory;
@@ -59,6 +60,14 @@ public interface IInventoryService
 public interface IStoreService
 {
     Task<List<StoreDto>> ListAsync(CancellationToken ct = default);
+}
+
+public interface IBiService
+{
+    Task<BiDashboardDto> GetDashboardAsync(BiDashboardQuery query, CancellationToken ct = default);
+    Task<IReadOnlyList<BiProductAbcDto>> GetProductAbcAsync(BiProductAbcQuery query, CancellationToken ct = default);
+    Task<IReadOnlyList<BiCustomerRfmDto>> GetCustomerRfmAsync(BiCustomerRfmQuery query, CancellationToken ct = default);
+    Task<IReadOnlyList<BiBreakdownItemDto>> GetBreakdownAsync(string dimension, BiBreakdownQuery query, CancellationToken ct = default);
 }
 
 public class StoreDto

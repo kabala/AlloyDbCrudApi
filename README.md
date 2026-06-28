@@ -160,6 +160,7 @@ Production does not run `Database.Migrate()` on API startup. Schema changes are 
 | Sales | `GET /api/sales`, `GET /api/sales/{transactionId}`, `POST /api/sales` |
 | Returns | `GET /api/returns/{id}`, `POST /api/returns` |
 | Inventory | `GET /api/inventory`, `GET /api/inventory/by?storeId=&productId=`, `GET /api/inventory/stores` |
+| BI | `GET /api/bi/dashboard`, `GET /api/bi/products/abc`, `GET /api/bi/customers/rfm`, `GET /api/bi/breakdowns/{dimension}` |
 | Health | `GET /health`, `GET /health/ready` |
 
 Most routes require JWT authentication and role-based authorization. Seeded development data includes users and catalog records for local testing.
@@ -220,6 +221,17 @@ Important settings:
 
 Cloud Run connects to Cloud SQL through the socket mount at `/cloudsql` using a normal Npgsql connection string. No Cloud SQL-specific NuGet package is required.
 
+## Local BI Module
+
+The API also exposes a fallback local BI module over the same operational PostgreSQL data:
+
+- `GET /api/bi/dashboard` returns summary KPIs, yearly/monthly trends, category/store/city metrics, discount impact, and notebook-style recommendations.
+- `GET /api/bi/products/abc` returns ABC-ranked products by cumulative revenue.
+- `GET /api/bi/customers/rfm` returns customer RFM rankings using the max sale date in the filtered dataset as the recency reference.
+- `GET /api/bi/breakdowns/{dimension}` returns read-only grouped metrics for category, store, city, supplier, season, discount, and return-focused cuts.
+
+These responses are cached in memory for 5 minutes to reduce repeated load on the Cloud SQL instance. This module is intentionally a short-term embedded BI surface, not the final BigQuery architecture.
+
 ## Project Structure
 
 ```text
@@ -238,3 +250,4 @@ infra/opentofu/   Google Cloud production infrastructure
 - [Production Deployment](docs/production-deployment.md)
 - [Database Schema](docs/database-schema.md)
 - [Frontend Integration](docs/frontend-integration.md)
+- [Local BI Module Plan](docs/local-bi-module-plan.md)

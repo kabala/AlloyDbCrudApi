@@ -1,6 +1,7 @@
 using System.Text;
 using AlloyDbCrudApi.Application.Abstractions;
 using AlloyDbCrudApi.Application.Validators.Auth;
+using AlloyDbCrudApi.Application.Validators.Bi;
 using AlloyDbCrudApi.Application.Validators.Customers;
 using AlloyDbCrudApi.Application.Validators.Products;
 using AlloyDbCrudApi.Application.Validators.Returns;
@@ -80,6 +81,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 builder.Services.AddOpenApi();
+builder.Services.AddMemoryCache(options => options.SizeLimit = 1024);
 
 var corsAllowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
@@ -107,6 +109,7 @@ builder.Services.AddScoped<ISaleService, SaleService>();
 builder.Services.AddScoped<IReturnService, ReturnService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IStoreService, StoreService>();
+builder.Services.AddScoped<IBiService, BiService>();
 
 builder.Services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateUserRequestValidator>();
@@ -114,6 +117,7 @@ builder.Services.AddValidatorsFromAssemblyContaining<CreateProductRequestValidat
 builder.Services.AddValidatorsFromAssemblyContaining<CreateCustomerRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateSaleRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateReturnRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<BiDashboardQueryValidator>();
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<AppDbContext>("database", tags: new[] { "ready" });
@@ -165,6 +169,7 @@ app.MapCustomerEndpoints();
 app.MapSaleEndpoints();
 app.MapReturnEndpoints();
 app.MapInventoryEndpoints();
+app.MapBiEndpoints();
 
 app.Run();
 
