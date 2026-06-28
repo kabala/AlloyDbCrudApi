@@ -39,6 +39,10 @@ if (string.IsNullOrWhiteSpace(jwt.SigningKey) && builder.Environment.IsDevelopme
     jwt = jwt with { SigningKey = "dev-only-signing-key-please-override-in-production-32bytes-min" };
     builder.Services.Configure<JwtOptions>(opts => opts.SigningKey = jwt.SigningKey);
 }
+else if (string.IsNullOrWhiteSpace(jwt.SigningKey))
+{
+    throw new InvalidOperationException("Jwt:SigningKey must be configured for non-development environments.");
+}
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 

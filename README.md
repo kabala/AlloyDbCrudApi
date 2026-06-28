@@ -80,6 +80,8 @@ Reset the local database volume:
 docker compose down -v
 ```
 
+This path is the simplest way to connect the frontend locally because the API is already exposed at `http://localhost:8080`.
+
 ## Run Locally With dotnet
 
 Start only PostgreSQL:
@@ -98,8 +100,27 @@ Open:
 
 - API base URL: `http://localhost:5200`
 - Scalar docs: `http://localhost:5200/scalar`
+- Health check: `http://localhost:5200/health`
 
 In development, the app applies EF Core migrations and runs the retail seed data automatically on startup.
+
+## Local Frontend Connection
+
+If the frontend is running in a browser against the local backend, the backend must allow the frontend origin through CORS. The easiest local browser setup is:
+
+```powershell
+$env:Cors__AllowedOrigins__0="http://localhost:5173"
+dotnet run --launch-profile http
+```
+
+Then start the frontend with:
+
+```powershell
+$env:VITE_API_BASE_URL="http://localhost:5200"
+pnpm run dev
+```
+
+If Vite starts on another port such as `5174`, use that exact origin in `Cors__AllowedOrigins__0`. If the frontend uses the Dockerized backend instead, set `VITE_API_BASE_URL` to `http://localhost:8080`.
 
 ## Build And Test
 

@@ -9,6 +9,7 @@ Docker Compose is only for local development with a PostgreSQL container. Produc
 - Cloud Run hosts the API container. The service configuration is managed by OpenTofu; GitHub Actions updates the image for each release.
 - Cloud Run connects to Cloud SQL through the Cloud SQL socket mount at `/cloudsql`.
 - Secret Manager stores database connection strings.
+- Secret Manager also stores the JWT signing key used for token issuance.
 - EF Core migrations run from a separate Cloud Run Job built from `Dockerfile.migrations`.
 
 The application does not run `Database.Migrate()` in production. Production schema changes are applied by the `Migrate Production Database` workflow.
@@ -65,7 +66,7 @@ No additional .NET NuGet package is required for this connection mode. The app c
 The Cloud Run runtime and migration service accounts need:
 
 - `roles/cloudsql.client`
-- `roles/secretmanager.secretAccessor` on the relevant connection-string secret
+- `roles/secretmanager.secretAccessor` on the relevant runtime secrets such as the connection string and JWT signing key
 
 ## GitHub Variables
 
@@ -85,6 +86,7 @@ OpenTofu manages these repository variables:
 | `MIGRATION_JOB` | `cloudsql-crud-api-migrations` |
 | `MIGRATION_SERVICE_ACCOUNT` | `cloudsql-crud-migrations@personal-434212.iam.gserviceaccount.com` |
 | `DB_CONNECTION_SECRET` | `cloudsql-crud-api-connection` |
+| `JWT_SIGNING_KEY_SECRET` | `cloudsql-crud-api-jwt-signing-key` |
 | `MIGRATION_DB_CONNECTION_SECRET` | `cloudsql-crud-api-migration-connection` |
 | `CLOUD_RUN_ALLOW_UNAUTHENTICATED` | `true` |
 
