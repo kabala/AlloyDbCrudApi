@@ -94,12 +94,18 @@ Run the API from the host:
 dotnet run --launch-profile http
 ```
 
+Run the production-capable BI history seed explicitly against the configured database:
+
+```bash
+dotnet run --launch-profile http -- --seed retail-bi-history
+```
+
 Open:
 
 - API base URL: `http://localhost:5200`
 - Scalar docs: `http://localhost:5200/scalar`
 
-In development, the app applies EF Core migrations and runs the retail seed data automatically on startup.
+In development, the app applies EF Core migrations and runs a lightweight seed automatically on startup. The large BI history seed only runs when you invoke `--seed retail-bi-history`.
 
 ## Build And Test
 
@@ -149,6 +155,8 @@ dotnet ef migrations bundle --configuration Release --self-contained --target-ru
 
 Production does not run `Database.Migrate()` on API startup. Schema changes are applied by the `Migrate Production Database` GitHub Actions workflow through a Cloud Run Job.
 
+The BI history seed also stays out of EF migrations. Run it explicitly through the app command or the `Seed BI History` GitHub Actions workflow.
+
 ## Main API Routes
 
 | Module | Routes |
@@ -191,7 +199,8 @@ After infrastructure exists, deploy in this order:
 
 1. Push to GitHub and confirm the `CI` workflow passes.
 2. Run the `Migrate Production Database` workflow manually if there are schema changes.
-3. Run the `Deploy Production` workflow manually to build, push, and deploy the API image to Cloud Run.
+3. Run the `Seed BI History` workflow manually for the initial historical load when the production database needs BI-ready data.
+4. Run the `Deploy Production` workflow manually to build, push, and deploy the API image to Cloud Run.
 
 The deploy workflow builds `Dockerfile`, pushes the image to Artifact Registry, and runs:
 
@@ -209,6 +218,14 @@ gcloud run deploy "$CLOUD_RUN_SERVICE" \
 
 The migration workflow builds `Dockerfile.migrations`, deploys a Cloud Run Job, and executes it against Cloud SQL.
 
+The BI seed workflow builds the normal API image, deploys a dedicated Cloud Run Job, and executes:
+
+```bash
+dotnet AlloyDbCrudApi.dll --seed retail-bi-history
+```
+
+Running that job writes directly to whichever database is configured by `ConnectionStrings__DefaultConnection`. Treat it as an intentional production write.
+
 ## Configuration
 
 Important settings:
@@ -217,8 +234,25 @@ Important settings:
 - `Jwt__Issuer`, `Jwt__Audience`, `Jwt__SigningKey`: JWT settings. Development has a fallback signing key; production must provide a real secret.
 - `Cors__AllowedOrigins__0`: allowed frontend origin for browser clients.
 - `ASPNETCORE_ENVIRONMENT`: use `Development` locally and `Production` in Cloud Run.
+- `--seed retail-bi-history`: explicit application command that generates the large historical operational dataset for BI extraction.
 
 Cloud Run connects to Cloud SQL through the socket mount at `/cloudsql` using a normal Npgsql connection string. No Cloud SQL-specific NuGet package is required.
+
+## BI History Seed Profile
+
+The explicit BI seed targets these approximate operational counts:
+
+- `stores`: 5
+- `products`: 50,000
+- `customers`: 25,000
+- `sales`: 43,489
+- `sale_items`: 43,489
+- `returns`: about 4,317
+- date range: `2020-01-01` to `2024-12-31`
+- revenue: near `10.8M`
+- margin: near `6.16M`
+
+It generates clean source data intended for later BigQuery extraction. BigQuery models, ETL, dashboards, ABC calculations, and RFM materialization remain outside this API.
 
 ## Project Structure
 
@@ -238,3 +272,4 @@ infra/opentofu/   Google Cloud production infrastructure
 - [Production Deployment](docs/production-deployment.md)
 - [Database Schema](docs/database-schema.md)
 - [Frontend Integration](docs/frontend-integration.md)
+- [Massive Retail BI Seed Plan](docs/massive-retail-bi-seed-plan.md)

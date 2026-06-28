@@ -12,6 +12,11 @@ namespace AlloyDbCrudApi.Infrastructure.Seeding;
 
 public class RetailSeeder
 {
+    private const int DevProductLimit = 250;
+    private const int DevCustomerLimit = 150;
+    private const int DevSaleLimit = 75;
+    private const int DevInventoryStock = 25;
+
     private readonly AppDbContext _db;
     private readonly UserManager<User> _users;
     private readonly RoleManager<IdentityRole<Guid>> _roles;
@@ -99,7 +104,7 @@ public class RetailSeeder
         foreach (var st in stores) _db.Stores.Add(st);
         await _db.SaveChangesAsync(ct);
 
-        var products = ReadProducts(supplierByCode);
+        var products = ReadProducts(supplierByCode).Take(DevProductLimit).ToList();
         var validProducts = new List<Product>();
         var rejected = 0;
         foreach (var p in products)
@@ -111,19 +116,30 @@ public class RetailSeeder
         await _db.SaveChangesAsync(ct);
         if (rejected > 0) _log.LogWarning("Rejected {Count} products due to invalid data.", rejected);
 
-        var customers = ReadCustomers();
+        var customers = ReadCustomers().Take(DevCustomerLimit).ToList();
         _db.Customers.AddRange(customers);
+        await _db.SaveChangesAsync(ct);
+
+        var inventory = stores
+            .SelectMany(store => validProducts.Select(product => new InventoryItem
+            {
+                StoreId = store.StoreId,
+                ProductId = product.ProductId,
+                StockOnHand = DevInventoryStock,
+            }))
+            .ToList();
+        _db.InventoryItems.AddRange(inventory);
         await _db.SaveChangesAsync(ct);
 
         var productById = validProducts.ToDictionary(p => p.ProductId);
         var customerIds = new HashSet<string>(customers.Select(c => c.CustomerId));
         var storeIds = new HashSet<string>(stores.Select(s => s.StoreId));
-        var sales = ReadSales(productById, customerIds, storeIds);
+        var sales = ReadSales(productById, customerIds, storeIds).Take(DevSaleLimit).ToList();
         _db.Sales.AddRange(sales);
         await _db.SaveChangesAsync(ct);
 
-        _log.LogInformation("Seeded {Stores} stores, {Suppliers} suppliers, {Products} products, {Customers} customers, {Sales} sales.",
-            stores.Count, suppliers.Count, validProducts.Count, customers.Count, sales.Count);
+        _log.LogInformation("Seeded lightweight dev data: {Stores} stores, {Suppliers} suppliers, {Products} products, {Customers} customers, {Inventory} inventory rows, {Sales} sales.",
+            stores.Count, suppliers.Count, validProducts.Count, customers.Count, inventory.Count, sales.Count);
     }
 
     private Dictionary<string, Supplier> ReadSuppliers()

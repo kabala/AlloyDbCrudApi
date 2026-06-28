@@ -119,8 +119,16 @@ builder.Services.AddHealthChecks()
     .AddDbContextCheck<AppDbContext>("database", tags: new[] { "ready" });
 
 builder.Services.AddScoped<RetailSeeder>();
+builder.Services.AddScoped<RetailHistorySeeder>();
 
 var app = builder.Build();
+
+var seedCommand = SeedCommand.Parse(args);
+if (seedCommand is not null)
+{
+    await RunSeedCommandAsync(app, seedCommand);
+    return;
+}
 
 app.UseSerilogRequestLogging();
 
@@ -167,5 +175,23 @@ app.MapReturnEndpoints();
 app.MapInventoryEndpoints();
 
 app.Run();
+
+static async Task RunSeedCommandAsync(WebApplication app, SeedCommand command)
+{
+    using var scope = app.Services.CreateScope();
+    var services = scope.ServiceProvider;
+    var db = services.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+
+    switch (command.Name)
+    {
+        case SeedCommand.RetailBiHistory:
+            var retailHistorySeeder = services.GetRequiredService<RetailHistorySeeder>();
+            await retailHistorySeeder.SeedAsync();
+            return;
+        default:
+            throw new InvalidOperationException($"Unsupported seed command '{command.Name}'.");
+    }
+}
 
 public partial class Program;

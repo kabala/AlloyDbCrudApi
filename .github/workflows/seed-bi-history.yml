@@ -1,0 +1,69 @@
+name: Seed BI History
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  REGION: ${{ vars.GCP_REGION }}
+  ARTIFACT_REGISTRY_REPOSITORY: ${{ vars.ARTIFACT_REGISTRY_REPOSITORY }}
+  CLOUD_SQL_INSTANCE_CONNECTION_NAME: ${{ vars.CLOUD_SQL_INSTANCE_CONNECTION_NAME }}
+  DB_CONNECTION_SECRET: ${{ vars.DB_CONNECTION_SECRET }}
+  MIGRATION_SERVICE_ACCOUNT: ${{ vars.MIGRATION_SERVICE_ACCOUNT }}
+  IMAGE_NAME: ${{ vars.API_IMAGE_NAME }}
+  SEED_JOB: cloudsql-crud-api-seed-bi-history
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+
+      - name: Build and push API image
+        run: |
+          set -euo pipefail
+          image="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REGISTRY_REPOSITORY}/${IMAGE_NAME}:${GITHUB_SHA}"
+          docker build --file Dockerfile --tag "$image" .
+          docker push "$image"
+          echo "IMAGE=$image" >> "$GITHUB_ENV"
+
+      - name: Deploy Cloud Run seed job
+        run: |
+          set -euo pipefail
+          gcloud run jobs deploy "$SEED_JOB" \
+            --project "$PROJECT_ID" \
+            --region "$REGION" \
+            --image "$IMAGE" \
+            --service-account "$MIGRATION_SERVICE_ACCOUNT" \
+            --set-secrets "ConnectionStrings__DefaultConnection=${DB_CONNECTION_SECRET}:latest" \
+            --set-cloudsql-instances "$CLOUD_SQL_INSTANCE_CONNECTION_NAME" \
+            --args=--seed,retail-bi-history \
+            --tasks 1 \
+            --max-retries 0 \
+            --task-timeout 1800s
+
+      - name: Execute Cloud Run seed job
+        run: |
+          gcloud run jobs execute "$SEED_JOB" \
+            --project "$PROJECT_ID" \
+            --region "$REGION" \
+            --wait

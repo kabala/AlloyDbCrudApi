@@ -10,8 +10,9 @@ Docker Compose is only for local development with a PostgreSQL container. Produc
 - Cloud Run connects to Cloud SQL through the Cloud SQL socket mount at `/cloudsql`.
 - Secret Manager stores database connection strings.
 - EF Core migrations run from a separate Cloud Run Job built from `Dockerfile.migrations`.
+- The historical BI seed runs from a separate Cloud Run Job using the normal API image with `--seed retail-bi-history`.
 
-The application does not run `Database.Migrate()` in production. Production schema changes are applied by the `Migrate Production Database` workflow.
+The application does not run `Database.Migrate()` in production. Production schema changes are applied by the `Migrate Production Database` workflow. The historical BI seed is also explicit and never runs on API startup.
 
 ## Infrastructure With OpenTofu
 
@@ -104,7 +105,8 @@ The Cloud SQL instance enables `cloudsql.logical_decoding` for CDC readiness. A 
 
 1. Run `CI` on pull requests and pushes.
 2. Run `Migrate Production Database` manually when a deployment includes schema changes.
-3. Run `Deploy Production` manually to deploy the API image to Cloud Run.
+3. Run `Seed BI History` manually when the production database needs the initial historical BI load.
+4. Run `Deploy Production` manually to deploy the API image to Cloud Run.
 
 For breaking schema changes, use expand-and-contract migrations so the currently deployed app and the new app can both run during rollout.
 
