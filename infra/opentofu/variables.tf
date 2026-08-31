@@ -89,9 +89,12 @@ variable "cloud_run_allow_unauthenticated" {
 }
 
 variable "cors_allowed_origins" {
-  description = "Exact browser origins allowed to call the API through CORS, for example the public frontend URL."
+  description = "Exact browser origins allowed to call the API through CORS. Include every official Cloud Run URL used to serve the frontend."
   type        = list(string)
-  default     = []
+  default = [
+    "https://alloydb-crud-frontend-911798515324.us-east1.run.app",
+    "https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app",
+  ]
 }
 
 variable "migration_job" {

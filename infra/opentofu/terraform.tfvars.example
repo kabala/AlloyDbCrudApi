@@ -6,7 +6,8 @@ github_repository_full_name = "kabala/AlloyDbCrudApi"
 
 cloud_run_allow_unauthenticated = true
 cors_allowed_origins = [
-  # "https://your-frontend-url.run.app",
+  "https://alloydb-crud-frontend-911798515324.us-east1.run.app",
+  "https://alloydb-crud-frontend-dmkxnmuy3q-ue.a.run.app",
 ]
 
 cloud_sql_instance_name     = "crud-postgres"
