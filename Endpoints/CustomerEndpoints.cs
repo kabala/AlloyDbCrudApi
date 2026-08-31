@@ -12,7 +12,7 @@ public static class CustomerEndpoints
     {
         var g = app.MapGroup("/api/customers").WithTags("Customers");
 
-        g.MapGet("/", async ([AsParameters] CustomerListQuery q, ICustomerService svc, CustomerListQueryValidator val, CancellationToken ct) =>
+        g.MapGet("", async ([AsParameters] CustomerListQuery q, ICustomerService svc, CustomerListQueryValidator val, CancellationToken ct) =>
         {
             var v = await val.ValidateAsync(q, ct);
             if (!v.IsValid) return Results.ValidationProblem(v.ToDictionary());

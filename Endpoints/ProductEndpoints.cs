@@ -12,7 +12,7 @@ public static class ProductEndpoints
     {
         var g = app.MapGroup("/api/products").WithTags("Products");
 
-        g.MapGet("/", async ([AsParameters] ProductListQuery q, IProductService svc, ProductListQueryValidator val, CancellationToken ct) =>
+        g.MapGet("", async ([AsParameters] ProductListQuery q, IProductService svc, ProductListQueryValidator val, CancellationToken ct) =>
         {
             var v = await val.ValidateAsync(q, ct);
             if (!v.IsValid) return Results.ValidationProblem(v.ToDictionary());

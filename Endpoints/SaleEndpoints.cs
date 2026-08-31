@@ -12,7 +12,7 @@ public static class SaleEndpoints
     {
         var g = app.MapGroup("/api/sales").WithTags("Sales");
 
-        g.MapGet("/", async ([AsParameters] SaleListQuery q, ISaleService svc, SaleListQueryValidator val, CancellationToken ct) =>
+        g.MapGet("", async ([AsParameters] SaleListQuery q, ISaleService svc, SaleListQueryValidator val, CancellationToken ct) =>
         {
             var v = await val.ValidateAsync(q, ct);
             if (!v.IsValid) return Results.ValidationProblem(v.ToDictionary());

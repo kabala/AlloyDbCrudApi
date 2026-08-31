@@ -10,7 +10,7 @@ public static class InventoryEndpoints
     {
         var g = app.MapGroup("/api/inventory").WithTags("Inventory");
 
-        g.MapGet("/", async ([AsParameters] InventoryQuery q, IInventoryService svc, CancellationToken ct) =>
+        g.MapGet("", async ([AsParameters] InventoryQuery q, IInventoryService svc, CancellationToken ct) =>
             Results.Ok(await svc.ListAsync(q, ct)))
             .RequireAuthorization(pb => pb.RequireRole("Superadmin", "Vendedor"))
             .WithName("ListInventory");
