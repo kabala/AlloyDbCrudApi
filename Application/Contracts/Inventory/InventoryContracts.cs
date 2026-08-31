@@ -15,6 +15,6 @@ public class InventoryQuery
 {
     public string? StoreId { get; set; }
     public string? ProductId { get; set; }
-    public int Page { get; set; } = 1;
-    public int PageSize { get; set; } = 25;
+    public int? Page { get; set; }
+    public int? PageSize { get; set; }
 }

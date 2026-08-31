@@ -25,7 +25,7 @@ public class CustomerListQuery
 {
     public string? City { get; set; }
     public Gender? Gender { get; set; }
-    public bool IncludeInactive { get; set; } = false;
-    public int Page { get; set; } = 1;
-    public int PageSize { get; set; } = 25;
+    public bool? IncludeInactive { get; set; }
+    public int? Page { get; set; }
+    public int? PageSize { get; set; }
 }

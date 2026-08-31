@@ -17,15 +17,17 @@ public class ProductService : IProductService
 
     public async Task<PagedResult<ProductDto>> ListAsync(ProductListQuery q, CancellationToken ct = default)
     {
+        var page = q.Page ?? 1;
+        var pageSize = q.PageSize ?? 25;
         var qry = _db.Products.AsNoTracking();
-        if (!q.IncludeInactive) qry = qry.Where(p => p.IsActive);
+        if (q.IncludeInactive != true) qry = qry.Where(p => p.IsActive);
         if (!string.IsNullOrWhiteSpace(q.Category)) qry = qry.Where(p => p.Category == q.Category);
         if (!string.IsNullOrWhiteSpace(q.Season)) qry = qry.Where(p => p.Season == q.Season);
         if (q.SupplierId.HasValue) qry = qry.Where(p => p.SupplierId == q.SupplierId);
 
         var total = await qry.CountAsync(ct);
         var items = await qry.OrderBy(p => p.ProductId)
-            .Skip((q.Page - 1) * q.PageSize).Take(q.PageSize)
+            .Skip((page - 1) * pageSize).Take(pageSize)
             .Select(p => new ProductDto
             {
                 ProductId = p.ProductId,
@@ -41,7 +43,7 @@ public class ProductService : IProductService
                 IsActive = p.IsActive,
             })
             .ToListAsync(ct);
-        return new PagedResult<ProductDto> { Items = items, Total = total, Page = q.Page, PageSize = q.PageSize };
+        return new PagedResult<ProductDto> { Items = items, Total = total, Page = page, PageSize = pageSize };
     }
 
     public async Task<ProductDto?> GetAsync(string productId, CancellationToken ct = default)

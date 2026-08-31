@@ -17,20 +17,22 @@ public class CustomerService : ICustomerService
 
     public async Task<PagedResult<CustomerDto>> ListAsync(CustomerListQuery q, CancellationToken ct = default)
     {
+        var page = q.Page ?? 1;
+        var pageSize = q.PageSize ?? 25;
         var qry = _db.Customers.AsNoTracking();
-        if (!q.IncludeInactive) qry = qry.Where(c => c.IsActive);
+        if (q.IncludeInactive != true) qry = qry.Where(c => c.IsActive);
         if (!string.IsNullOrWhiteSpace(q.City)) qry = qry.Where(c => c.City == q.City);
         if (q.Gender.HasValue) qry = qry.Where(c => c.Gender == q.Gender);
 
         var total = await qry.CountAsync(ct);
         var items = await qry.OrderBy(c => c.CustomerId)
-            .Skip((q.Page - 1) * q.PageSize).Take(q.PageSize)
+            .Skip((page - 1) * pageSize).Take(pageSize)
             .Select(c => new CustomerDto
             {
                 CustomerId = c.CustomerId, Age = c.Age, Gender = c.Gender, City = c.City, Email = c.Email, IsActive = c.IsActive,
             })
             .ToListAsync(ct);
-        return new PagedResult<CustomerDto> { Items = items, Total = total, Page = q.Page, PageSize = q.PageSize };
+        return new PagedResult<CustomerDto> { Items = items, Total = total, Page = page, PageSize = pageSize };
     }
 
     public async Task<CustomerDto?> GetAsync(string customerId, CancellationToken ct = default)

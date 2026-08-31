@@ -22,6 +22,8 @@ public class SaleService : ISaleService
 
     public async Task<PagedResult<SaleDto>> ListAsync(SaleListQuery q, CancellationToken ct = default)
     {
+        var page = q.Page ?? 1;
+        var pageSize = q.PageSize ?? 25;
         var qry = _db.Sales.AsNoTracking().Include(s => s.Items).AsNoTracking();
         if (!string.IsNullOrWhiteSpace(q.StoreId)) qry = qry.Where(s => s.StoreId == q.StoreId);
         if (!string.IsNullOrWhiteSpace(q.CustomerId)) qry = qry.Where(s => s.CustomerId == q.CustomerId);
@@ -32,14 +34,14 @@ public class SaleService : ISaleService
         var total = await qry.CountAsync(ct);
         var sales = await qry.OrderByDescending(s => s.Date)
             .ThenByDescending(s => s.TransactionId)
-            .Skip((q.Page - 1) * q.PageSize).Take(q.PageSize)
+            .Skip((page - 1) * pageSize).Take(pageSize)
             .ToListAsync(ct);
         var storeIds = sales.Select(s => s.StoreId).Distinct().ToList();
         var stores = await _db.Stores.AsNoTracking()
             .Where(st => storeIds.Contains(st.StoreId))
             .ToDictionaryAsync(st => st.StoreId, st => st.StoreName, ct);
         var items = sales.Select(s => ToDto(s, stores.GetValueOrDefault(s.StoreId) ?? s.StoreId)).ToList();
-        return new PagedResult<SaleDto> { Items = items, Total = total, Page = q.Page, PageSize = q.PageSize };
+        return new PagedResult<SaleDto> { Items = items, Total = total, Page = page, PageSize = pageSize };
     }
 
     public async Task<SaleDto?> GetAsync(string transactionId, CancellationToken ct = default)

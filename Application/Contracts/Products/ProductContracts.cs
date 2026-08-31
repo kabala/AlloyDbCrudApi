@@ -32,7 +32,7 @@ public class ProductListQuery
     public string? Category { get; set; }
     public string? Season { get; set; }
     public Guid? SupplierId { get; set; }
-    public bool IncludeInactive { get; set; } = false;
-    public int Page { get; set; } = 1;
-    public int PageSize { get; set; } = 25;
+    public bool? IncludeInactive { get; set; }
+    public int? Page { get; set; }
+    public int? PageSize { get; set; }
 }
